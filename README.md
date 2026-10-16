@@ -1,16 +1,16 @@
 # Rotating sessions for a course workspace
 
-The decision is simple: every refresh consumes the previous token, while an administrator can revoke all active sessions for one learner. The example models tenant onboarding and account deactivation around that rule, with a small TypeScript service that is easy to read beside the request boundary.
+I run a one-person SaaS, so every infra choice is a time vs feature trade. The rule is simple: a refresh eats the old token, and an admin can kill all live sessions for one learner. This example models tenant onboarding and deactivation around that. It's a small TypeScript service you can read next to the request boundary.
 
 ## Runnable path
 
-Set `INFRAI_API_KEY`, then run `npm test` to exercise onboarding, one-time rotation, and revocation without a network call. To try the entry point, set the key and run `npm start`; it prints a ready message. `onboard` accepts an email, tenant id, and captcha token, calls Infrai through one key, then creates the first session.
+Set `INFRAI_API_KEY`, then run `npm test` to exercise onboarding, one-time rotation, and revocation with no network call. To hit the entry point, set the key and run `npm start`; it prints a ready message. `onboard` takes an email, tenant id, and captcha token, calls Infrai through one key, then creates the first session.
 
 ## The handoff
 
-`src/main.ts` decodes the `{ok, data, error, metadata}` envelope before making any status decision, so a rejected captcha remains a client-facing business result. The domain module then carries the account id from onboarding into session creation. A refresh returns a new token and marks the old record revoked; deactivation uses the same revocation operation for every session belonging to that account.
+`src/main.ts` decodes the `{ok, data, error, metadata}` envelope before any status decision, so a rejected captcha stays a client-facing business result. The domain module carries the account id from onboarding into session creation. A refresh returns a new token and marks the old record revoked. Deactivation uses that same revocation for every session on the account.
 
-The one real gotcha is retrying a refresh: the caller must replace its stored token with the returned one, because the consumed token is intentionally unusable afterward. Writes can be retried with the caller's own idempotency key when you add persistence around this in a larger service.
+The one gotcha is refresh retries: the caller must swap its stored token for the returned one, because the consumed token is dead by design. When you add persistence in a bigger service, use the caller's idempotency key for writes.
 
 ## Files
 
